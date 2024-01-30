@@ -75,7 +75,10 @@ if(!noOutput)
 Console.WriteLine("Info:  Projekt wird überprüft");
 Console.WriteLine("       Noch nicht implementiert...");
 //CheckHelper.CheckThis(General, PublishActions);
-string headerPath = Path.Combine(Path.GetDirectoryName(args[1]), "knxprod.h");
+string rootPath = Path.GetDirectoryName(args[1]);
+string headerPath = Path.Combine(rootPath, "knxprod.h");
+if(Directory.Exists(Path.Combine(rootPath, "include")))
+    headerPath = Path.Combine(rootPath, "include", "knxprod.h");
 string filePath = Path.Combine(Path.GetDirectoryName(args[1]), General.FileName + ".knxprod");
 string assPath = Kaenx.Creator.Classes.Helper.GetAssemblyPath(General.Application.NamespaceVersion);
 
