@@ -8,18 +8,33 @@ Kaenx.Creator.Models.MainModel General;
 
 if(args.Length < 2)
 {
+    Console.ForegroundColor = ConsoleColor.Red;
     Console.WriteLine("Error: Es wurden nicht genügend Parameter angegeben.");
-    Console.WriteLine("       Kaenx.Creator.Console <Befehl> <Pfad>");
+    Console.WriteLine("       Kaenx.Creator.Console.exe <Befehl> <In_Pfad> <Out_Pfad> (silent)");
+    Console.ResetColor();
+    if(args.Length == 0)
+        args = ["help"];
+    else
+        args[0] = "help";
+}
+
+if(args[0] == "help")
+{
+    Console.WriteLine("Folgende Befehle werden unterstützt:");
+    Console.WriteLine("  publish - erstellt eine fertige knxprod");
+    Console.WriteLine("  release - erstellt eine release xml");
     return;
 }
 
 if(!System.IO.File.Exists(args[1]))
 {
+    Console.ForegroundColor = ConsoleColor.Red;
     Console.WriteLine("Error: Die angegebene Datei konnte nicht gefunden werden.");
+    Console.ResetColor();
     return;
 }
 
-if(args.Length >=3 && args[2] == "silent")
+if(args.Length >=4 && args[args.Length - 1] == "silent")
 {
     Console.WriteLine("Info:  Ausgaben werden reduziert.");
     noOutput = true;
@@ -43,7 +58,9 @@ if (VersionToOpen < Kaenx.Creator.Classes.Helper.CurrentVersion)
 }
 if (VersionToOpen > Kaenx.Creator.Classes.Helper.CurrentVersion)
 {
+    Console.ForegroundColor = ConsoleColor.Red;
     Console.WriteLine("Error: Das Projekt wurde mit einer neueren Version erstellt und kann somit nicht geöffnet werden.");
+    Console.ResetColor();
     return;
 }
 
@@ -53,7 +70,9 @@ try
 }
 catch (Exception ex)
 {
+    Console.ForegroundColor = ConsoleColor.Red;
     Console.WriteLine("Error: Beim öffnen des Projekts trat ein Fehler auf.");
+    Console.ResetColor();
     Console.WriteLine(ex.Message);
     Console.WriteLine(ex.StackTrace);
     return;
@@ -80,11 +99,13 @@ string headerPath = Path.Combine(rootPath, "knxprod.h");
 if(Directory.Exists(Path.Combine(rootPath, "include")))
     headerPath = Path.Combine(rootPath, "include", "knxprod.h");
 string filePath = Path.Combine(Path.GetDirectoryName(args[1]), General.FileName + ".knxprod");
-string assPath = Kaenx.Creator.Classes.Helper.GetAssemblyPath(General.Application.NamespaceVersion);
+//string assPath = Kaenx.Creator.Classes.Helper.GetAssemblyPath(General.Application.NamespaceVersion);
 
-if(string.IsNullOrEmpty(assPath))
+if(!Kaenx.Creator.Classes.Helper.CheckExportNamespace(General.Application.NamespaceVersion))
 {
+    Console.ForegroundColor = ConsoleColor.Red;
     Console.WriteLine("Error: Es konnte keine ETS gefunden werden.");
+    Console.ResetColor();
     return;
 }
 
@@ -93,22 +114,43 @@ switch(args[0])
     case "publish":
     {
         Console.WriteLine("Info:  Projekt wird erstellt");
-        Kaenx.Creator.Classes.ExportHelper helper = new Kaenx.Creator.Classes.ExportHelper(General, assPath, filePath, headerPath);
+        Kaenx.Creator.Classes.ExportHelper helper = new Kaenx.Creator.Classes.ExportHelper(General, filePath, headerPath);
         bool success = helper.ExportEts(noOutput ? null : PublishActions);
         if(!success)
         {
+            Console.ForegroundColor = ConsoleColor.Red;
             //MessageBox.Show(Properties.Messages.main_export_error, Properties.Messages.main_export_title);
             Console.WriteLine($"Error: Beim Veröffentlichen sind x Fehler aufgetreten.");
+            Console.ResetColor();
             return;
         }
         System.IO.Directory.CreateDirectory(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data"));
-        helper.SignOutput(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp")).Wait();
+        await helper.SignOutput(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"));
         Console.WriteLine("Info:  Projekt wurde erfolgreich erstellt");
         Console.WriteLine($"       {filePath}");
         break;
     }
 
+    case "release":
+    {
+        Console.WriteLine("Info:  Release wird erstellt");
+        Kaenx.Creator.Classes.ExportHelper helper = new Kaenx.Creator.Classes.ExportHelper(General, filePath, headerPath);
+        bool success = helper.ExportEts(noOutput ? null : PublishActions);
+        if(!success)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            //MessageBox.Show(Properties.Messages.main_export_error, Properties.Messages.main_export_title);
+            Console.WriteLine($"Error: Beim Veröffentlichen sind x Fehler aufgetreten.");
+            Console.ResetColor();
+            return;
+        }
+
+        break;
+    }
+
     default:
+        Console.ForegroundColor = ConsoleColor.Red;
         Console.WriteLine($"Error: Befehl {args[0]} ist unbekannt");
+        Console.ResetColor();
         break;
 }
