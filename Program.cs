@@ -1,4 +1,7 @@
-﻿System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+﻿using OpenKNX.Toolbox.Sign;
+using System.Xml.Linq;
+
+System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 bool noOutput = false;
 
 Console.WriteLine("Willkommen beim Kaenx-Creator.Console!!");
@@ -88,7 +91,8 @@ if(!noOutput)
     PublishActions.CollectionChanged += (object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) =>
     {
         foreach(Kaenx.Creator.Models.PublishAction act in e.NewItems)
-            Console.WriteLine(act.Text);
+            if(act.State != Kaenx.Creator.Models.PublishState.Info)
+                Console.WriteLine("       " + act.Text);
     };
 }
 Console.WriteLine("Info:  Projekt wird überprüft");
@@ -98,10 +102,8 @@ string rootPath = Path.GetDirectoryName(args[1]);
 string headerPath = Path.Combine(rootPath, "knxprod.h");
 if(Directory.Exists(Path.Combine(rootPath, "include")))
     headerPath = Path.Combine(rootPath, "include", "knxprod.h");
-string filePath = Path.Combine(Path.GetDirectoryName(args[1]), General.FileName + ".knxprod");
-//string assPath = Kaenx.Creator.Classes.Helper.GetAssemblyPath(General.Application.NamespaceVersion);
 
-if(!Kaenx.Creator.Classes.Helper.CheckExportNamespace(General.Application.NamespaceVersion))
+if(!Kaenx.Creator.Classes.Helper.CheckExportNamespace(General.Application.NamespaceVersion, true))
 {
     Console.ForegroundColor = ConsoleColor.Red;
     Console.WriteLine("Error: Es konnte keine ETS gefunden werden.");
@@ -114,7 +116,8 @@ switch(args[0])
     case "publish":
     {
         Console.WriteLine("Info:  Projekt wird erstellt");
-        Kaenx.Creator.Classes.ExportHelper helper = new Kaenx.Creator.Classes.ExportHelper(General, filePath, headerPath);
+        string filePath = Path.Combine(Path.GetDirectoryName(args[1]), General.FileName + ".knxprod");
+        Kaenx.Creator.Classes.ExportHelper helper = new Kaenx.Creator.Classes.ExportHelper(General, headerPath);
         bool success = helper.ExportEts(noOutput ? null : PublishActions);
         if(!success)
         {
@@ -125,7 +128,9 @@ switch(args[0])
             return;
         }
         System.IO.Directory.CreateDirectory(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data"));
-        await helper.SignOutput(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"));
+        Console.WriteLine("Info:  Projekt wird signiert");
+        await SignHelper.CheckMaster(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), 20);
+        await helper.SignOutput(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), filePath);
         Console.WriteLine("Info:  Projekt wurde erfolgreich erstellt");
         Console.WriteLine($"       {filePath}");
         break;
@@ -134,7 +139,7 @@ switch(args[0])
     case "release":
     {
         Console.WriteLine("Info:  Release wird erstellt");
-        Kaenx.Creator.Classes.ExportHelper helper = new Kaenx.Creator.Classes.ExportHelper(General, filePath, headerPath);
+        Kaenx.Creator.Classes.ExportHelper helper = new Kaenx.Creator.Classes.ExportHelper(General, headerPath);
         bool success = helper.ExportEts(noOutput ? null : PublishActions);
         if(!success)
         {
@@ -144,6 +149,29 @@ switch(args[0])
             Console.ResetColor();
             return;
         }
+        
+        string manu = General.IsOpenKnx ? "00FA" : $"{General.ManufacturerId:X4}";
+        string outputPath = helper.GetRelPath("Temp", "M-" + manu);
+        
+        string filePath = Path.Combine(Path.GetDirectoryName(args[1]), General.FileName + ".xml");
+        XElement xmerge = helper.CreateNewXML(manu);
+
+        foreach(string file in Directory.GetFiles(outputPath))
+        {
+            XElement xroot = XElement.Load(file);
+            XElement xmanu = xroot.Elements().ElementAt(0).Elements().ElementAt(0);
+            foreach(XElement xele in xmanu.Elements())
+            {
+                if(xele.Name.LocalName == "Languages") {
+
+                } else {
+                    xele.Name = XName.Get(xele.Name.LocalName, xmerge.Name.NamespaceName);
+                    xmerge.Add(xele);
+                }
+            }
+        }
+
+        File.WriteAllText(filePath, xmerge.Document.ToString());
 
         break;
     }

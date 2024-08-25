@@ -11,7 +11,7 @@
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/bin/Debug/net8.0/Kaenx.Creator.Console.dll",
-            "args": ["publish", "C:\\Users\\u6\\Documents\\repos\\GW-REG1-Dali\\Dali-GW.ae-manu"],
+            "args": ["release", "C:\\Users\\mikeg\\source\\repos\\GW-REG1-Dali\\Dali-GW.ae-manu"],
             "cwd": "${workspaceFolder}",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "integratedTerminal",
