@@ -1,0 +1,43 @@
+{
+  "Applications": [
+    {
+      "Name": "Kaenx.Creator.Console",
+      "Windows": {
+        "x86": {
+          "FilesAndFolders": {
+            "OpenKNXProducer": {
+              "SourcePath": "tools\\Windows\\Kaenx.Creator.Console-x86.exe",
+              "DestinationPath": "$env:USERPROFILE\\bin\\Kaenx.Creator.Console.exe"
+            }
+          }
+        },
+        "x64": {
+          "FilesAndFolders": {
+            "OpenKNXProducer": {
+              "SourcePath": "tools\\Windows\\Kaenx.Creator.Console-x64.exe",
+              "DestinationPath": "$env:USERPROFILE\\bin\\Kaenx.Creator.Console.exe"
+            }
+          }
+        }
+      },
+      "MacOS": { 
+        "FilesAndFolders": {
+          "OpenKNXProducer": {
+            "SourcePath": "tools/MacOS/Kaenx.Creator.Console",
+            "DestinationPath": "/usr/local/bin/Kaenx.Creator.Console"
+          }
+        },
+        "ExecuteCommand1": "chmod +x /usr/local/bin/Kaenx.Creator.Console"
+      },
+      "Linux": {
+        "FilesAndFolders": {
+          "OpenKNXProducer": {
+            "SourcePath": "tools/Linux/Kaenx.Creator.Console",
+            "DestinationPath": "/usr/local/bin/Kaenx.Creator.Console"
+          }
+        },
+        "ExecuteCommand1": "chmod +x /usr/local/bin/Kaenx.Creator.Console"
+      }
+    }
+  ]
+}

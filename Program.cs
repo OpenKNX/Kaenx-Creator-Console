@@ -1,5 +1,6 @@
 ﻿using OpenKNX.Toolbox.Sign;
 using System.IO.Compression;
+using System.Runtime.Serialization;
 using System.Xml.Linq;
 
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
@@ -7,6 +8,13 @@ bool noOutput = false;
 
 Console.WriteLine("Willkommen beim Kaenx-Creator.Console!!");
 Console.WriteLine();
+System.Version? clientVersion = typeof(Program).Assembly.GetName().Version;
+if(clientVersion != null) {
+    Console.WriteLine($"Version {clientVersion.Major}.{clientVersion.Minor}.{clientVersion.Build}");
+}
+
+if(args.Length > 0 && args[0] == "--version")
+    return;
 
 Kaenx.Creator.Models.MainModel General;
 
