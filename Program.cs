@@ -1,4 +1,5 @@
 ﻿using OpenKNX.Toolbox.Sign;
+using System.IO.Compression;
 using System.Xml.Linq;
 
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
@@ -139,6 +140,7 @@ switch(args[0])
     case "release":
     {
         Console.WriteLine("Info:  Release wird erstellt");
+        string knxprodPath = Path.Combine(Path.GetDirectoryName(args[1]), "release", General.FileName + ".knxprod");
         Kaenx.Creator.Classes.ExportHelper helper = new Kaenx.Creator.Classes.ExportHelper(General, headerPath);
         bool success = helper.ExportEts(noOutput ? null : PublishActions);
         if(!success)
@@ -149,30 +151,36 @@ switch(args[0])
             Console.ResetColor();
             return;
         }
+        Directory.CreateDirectory(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data"));
+        if(Directory.Exists(Path.Combine(Path.GetDirectoryName(args[1]), "release")))
+            Directory.Delete(Path.Combine(Path.GetDirectoryName(args[1]), "release"), true);
+        Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(args[1]), "release"));
+        Console.WriteLine("Info:  Projekt wird signiert");
+        await SignHelper.CheckMaster(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), 20);
+        await helper.SignOutput(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), knxprodPath);
+        Console.WriteLine("Info:  Projekt wurde erfolgreich erstellt");
+
+        Console.WriteLine("Info:  Baggages werden exportiert");
+        ZipArchive archive = ZipFile.OpenRead(knxprodPath);
+        string exportBase = Path.Combine(Path.GetDirectoryName(args[1]), "release", "data", General.FileName + ".baggages");
+        foreach(ZipArchiveEntry entry in archive.Entries) {
+            if(!entry.FullName.Contains("/Baggages/")) continue;
+            string relPath = entry.FullName;
+            relPath = relPath.Substring(relPath.IndexOf("/Baggages/") + 10);
+            string exportFilePath = Path.Combine(exportBase, relPath);
+            if(!Directory.Exists(Path.GetDirectoryName(exportFilePath)))
+                Directory.CreateDirectory(Path.GetDirectoryName(exportFilePath));
+            entry.ExtractToFile(exportFilePath);
+        }
         
+        Console.WriteLine("Info:  XML wird erstellt");
         string manu = General.IsOpenKnx ? "00FA" : $"{General.ManufacturerId:X4}";
         string outputPath = helper.GetRelPath("Temp", "M-" + manu);
-        
-        string filePath = Path.Combine(Path.GetDirectoryName(args[1]), General.FileName + ".xml");
-        XElement xmerge = helper.CreateNewXML(manu);
+        string filePath = Path.Combine(Path.GetDirectoryName(args[1]), "release", "data", General.FileName + ".xml");
 
-        foreach(string file in Directory.GetFiles(outputPath))
-        {
-            XElement xroot = XElement.Load(file);
-            XElement xmanu = xroot.Elements().ElementAt(0).Elements().ElementAt(0);
-            foreach(XElement xele in xmanu.Elements())
-            {
-                if(xele.Name.LocalName == "Languages") {
-
-                } else {
-                    xele.Name = XName.Get(xele.Name.LocalName, xmerge.Name.NamespaceName);
-                    xmerge.Add(xele);
-                }
-            }
-        }
-
-        File.WriteAllText(filePath, xmerge.Document.ToString());
-
+        MergeHelper.MergeFiles(outputPath, filePath, General);
+        Console.WriteLine("Info:  Release wurde erfolgreich erstellt");
+        Console.WriteLine($"       {filePath}");
         break;
     }
 
