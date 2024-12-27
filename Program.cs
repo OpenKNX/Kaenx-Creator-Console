@@ -33,8 +33,11 @@ if(args.Length < 2)
 if(args[0] == "help")
 {
     Console.WriteLine("Folgende Befehle werden unterstützt:");
-    Console.WriteLine("  publish - erstellt eine fertige knxprod");
-    Console.WriteLine("  release - erstellt eine release xml");
+    Console.WriteLine("  publish   - erstellt eine fertige knxprod");
+    Console.WriteLine("  release   - erstellt eine release xml");
+    Console.WriteLine("  help      - zeigt diese Hilfe an");
+    Console.WriteLine("  --version - zeigt die Version an");
+    Console.WriteLine("  silent    - reduziert die Ausgaben");
     return;
 }
 
@@ -107,7 +110,14 @@ if(!noOutput)
 Console.WriteLine("Info:  Projekt wird überprüft");
 Console.WriteLine("       Noch nicht implementiert...");
 //CheckHelper.CheckThis(General, PublishActions);
-string rootPath = Path.GetDirectoryName(args[1]);
+string rootPath = Path.GetDirectoryName(args[1]) ?? "";
+if(rootPath == "")
+{
+    Console.ForegroundColor = ConsoleColor.Red;
+    Console.WriteLine("Error: Der Pfad konnte nicht ermittelt werden.");
+    Console.ResetColor();
+    return;
+}
 string headerPath = Path.Combine(rootPath, "knxprod.h");
 if(Directory.Exists(Path.Combine(rootPath, "include")))
     headerPath = Path.Combine(rootPath, "include", "knxprod.h");
@@ -125,21 +135,20 @@ switch(args[0])
     case "publish":
     {
         Console.WriteLine("Info:  Projekt wird erstellt");
-        string filePath = Path.Combine(Path.GetDirectoryName(args[1]), General.FileName + ".knxprod");
+        string filePath = Path.Combine(rootPath, General.FileName + ".knxprod");
         Kaenx.Creator.Classes.ExportHelper helper = new Kaenx.Creator.Classes.ExportHelper(General, headerPath);
         bool success = helper.ExportEts(noOutput ? null : PublishActions);
         if(!success)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            //MessageBox.Show(Properties.Messages.main_export_error, Properties.Messages.main_export_title);
-            Console.WriteLine($"Error: Beim Veröffentlichen sind x Fehler aufgetreten.");
+            Console.WriteLine($"Error: Beim Veröffentlichen sind {PublishActions.Count(pa => pa.State == Kaenx.Creator.Models.PublishState.Fail)} Fehler aufgetreten.");
             Console.ResetColor();
             return;
         }
         System.IO.Directory.CreateDirectory(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data"));
         Console.WriteLine("Info:  Projekt wird signiert");
-        await SignHelper.CheckMaster(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), 20);
-        await helper.SignOutput(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), filePath, 20);
+        await SignHelper.CheckMaster(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), General.Application.NamespaceVersion);
+        await helper.SignOutput(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), filePath, General.Application.NamespaceVersion);
         Console.WriteLine("Info:  Projekt wurde erfolgreich erstellt");
         Console.WriteLine($"       {filePath}");
         break;
@@ -148,29 +157,28 @@ switch(args[0])
     case "release":
     {
         Console.WriteLine("Info:  Release wird erstellt");
-        string knxprodPath = Path.Combine(Path.GetDirectoryName(args[1]), "release", General.FileName + ".knxprod");
+        string knxprodPath = Path.Combine(rootPath, "release", General.FileName + ".knxprod");
         Kaenx.Creator.Classes.ExportHelper helper = new Kaenx.Creator.Classes.ExportHelper(General, headerPath);
         bool success = helper.ExportEts(noOutput ? null : PublishActions);
         if(!success)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            //MessageBox.Show(Properties.Messages.main_export_error, Properties.Messages.main_export_title);
-            Console.WriteLine($"Error: Beim Veröffentlichen sind x Fehler aufgetreten.");
+            Console.WriteLine($"Error: Beim Veröffentlichen sind {PublishActions.Count(pa => pa.State == Kaenx.Creator.Models.PublishState.Fail)} Fehler aufgetreten.");
             Console.ResetColor();
             return;
         }
         Directory.CreateDirectory(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data"));
-        if(Directory.Exists(Path.Combine(Path.GetDirectoryName(args[1]), "release")))
-            Directory.Delete(Path.Combine(Path.GetDirectoryName(args[1]), "release"), true);
-        Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(args[1]), "release"));
+        if(Directory.Exists(Path.Combine(rootPath, "release")))
+            Directory.Delete(Path.Combine(rootPath, "release"), true);
+        Directory.CreateDirectory(Path.Combine(rootPath, "release"));
         Console.WriteLine("Info:  Projekt wird signiert");
-        await SignHelper.CheckMaster(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), 20);
-        await helper.SignOutput(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), knxprodPath, 20);
+        await SignHelper.CheckMaster(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), General.Application.NamespaceVersion);
+        await helper.SignOutput(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), knxprodPath, General.Application.NamespaceVersion);
         Console.WriteLine("Info:  Projekt wurde erfolgreich erstellt");
 
         Console.WriteLine("Info:  Baggages werden exportiert");
         ZipArchive archive = ZipFile.OpenRead(knxprodPath);
-        string exportBase = Path.Combine(Path.GetDirectoryName(args[1]), "release", "data", General.FileName + ".baggages");
+        string exportBase = Path.Combine(rootPath, "release", "data", General.FileName + ".baggages");
         foreach(ZipArchiveEntry entry in archive.Entries) {
             if(!entry.FullName.Contains("/Baggages/")) continue;
             string relPath = entry.FullName;
@@ -184,7 +192,7 @@ switch(args[0])
         Console.WriteLine("Info:  XML wird erstellt");
         string manu = General.IsOpenKnx ? "00FA" : $"{General.ManufacturerId:X4}";
         string outputPath = helper.GetRelPath("Temp", "M-" + manu);
-        string filePath = Path.Combine(Path.GetDirectoryName(args[1]), "release", "data", General.FileName + ".xml");
+        string filePath = Path.Combine(rootPath, "release", "data", General.FileName + ".xml");
 
         MergeHelper.MergeFiles(outputPath, filePath, General);
         Console.WriteLine("Info:  Release wurde erfolgreich erstellt");

@@ -5,7 +5,7 @@ internal class MergeHelper
 {
     public static void MergeFiles(string folder, string outputFile, Kaenx.Creator.Models.MainModel general)
     {
-        string manu = general.IsOpenKnx ? "00FA" : $"{general.ManufacturerId:X4}";
+        string manu = general.IsOpenKnx ? "M-00FA" : $"M-{general.ManufacturerId:X4}";
         Kaenx.Creator.Classes.ExportHelper helper = new Kaenx.Creator.Classes.ExportHelper(general);
         helper.SetNamespace(general.Application.NamespaceVersion);
         XElement xmerge = helper.CreateNewXML(manu);
