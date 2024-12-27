@@ -41,7 +41,7 @@ if(args[0] == "help")
 if(!System.IO.File.Exists(args[1]))
 {
     Console.ForegroundColor = ConsoleColor.Red;
-    Console.WriteLine("Error: Die angegebene Datei konnte nicht gefunden werden.");
+    Console.WriteLine($"Error: Die angegebene Datei konnte nicht gefunden werden.\r\n\t({args[1]})");
     Console.ResetColor();
     return;
 }
@@ -139,7 +139,7 @@ switch(args[0])
         System.IO.Directory.CreateDirectory(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data"));
         Console.WriteLine("Info:  Projekt wird signiert");
         await SignHelper.CheckMaster(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), 20);
-        await helper.SignOutput(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), filePath);
+        await helper.SignOutput(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), filePath, 20);
         Console.WriteLine("Info:  Projekt wurde erfolgreich erstellt");
         Console.WriteLine($"       {filePath}");
         break;
@@ -165,7 +165,7 @@ switch(args[0])
         Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(args[1]), "release"));
         Console.WriteLine("Info:  Projekt wird signiert");
         await SignHelper.CheckMaster(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), 20);
-        await helper.SignOutput(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), knxprodPath);
+        await helper.SignOutput(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Output", "Temp"), knxprodPath, 20);
         Console.WriteLine("Info:  Projekt wurde erfolgreich erstellt");
 
         Console.WriteLine("Info:  Baggages werden exportiert");
