@@ -122,7 +122,7 @@ string headerPath = Path.Combine(rootPath, "knxprod.h");
 if(Directory.Exists(Path.Combine(rootPath, "include")))
     headerPath = Path.Combine(rootPath, "include", "knxprod.h");
 
-if(!Kaenx.Creator.Classes.Helper.CheckExportNamespace(General.Application.NamespaceVersion, true))
+if(!Kaenx.Creator.Classes.Helper.CheckExportNamespace(General.Application.NamespaceVersion))
 {
     Console.ForegroundColor = ConsoleColor.Red;
     Console.WriteLine("Error: Es konnte keine ETS gefunden werden.");
